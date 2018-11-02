@@ -1,0 +1,202 @@
+<h2 class="page-header">Dashboard</h2>
+<p>Welcome to your dashboard</p>
+
+
+<div class="row">
+    <div class="col-lg-10">
+        <input type="text" class="form-control" id="newnote" placeholder="Add new note..." />
+    </div>
+    <div class="col-lg-2">
+        <button class="btn btn-primary mb-2" onclick="addNote()">Add</button>
+    </div>
+</div>
+<p></p>
+<h4 class="page-header">To Be Done</h4>
+
+<div class="row">
+    <ul class="list-group sortlist" style="width:100%" id="todo-list">
+        {{#each todoTasks}}
+        <li class="list-group-item" style="padding-left: 35px">
+            <input type="checkbox" class="form-check-input" id="markAsDone" onclick="updateStatus(event, '{{this.taskid}}', 0)" />
+            <label class="form-check-label">{{this.item}}</label>
+            <div style="float:right">
+                <button class='action edit' onclick="openEdit('{{this.taskid}}', '{{this.item}}')">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class='action delete' onclick="openConfirm('{{this.taskid}}')">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        </li>
+        {{/each}}
+    </ul>
+</div>
+
+
+<hr />
+<h4 class="page-header">Completed</h4>
+
+<div class="row">
+    <ul class="list-group sortlist" style="width:100%" id="completed-list">
+        {{#each completedTasks}}
+        <li class="list-group-item" style="padding-left: 35px">
+            <input type="checkbox" class="form-check-input" id="" checked />
+            <label class="form-check-label">{{this.item}}</label>
+            <div style="float:right">
+                <button class='action delete' onclick="openConfirm('{{this.taskid}}')">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        </li>
+        {{/each}}
+    </ul>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalLabel">Confirmation</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                Do you want to delete this item?
+                <label id="taskid" hidden></label>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="confirmDelete()">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalLabel">Edit</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <label>Task Name: </label>
+                <input type="text" class="form-control" id="taskName" />
+                <label id="taskid" hidden></label>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="confirmEdit()">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    function addNote() {
+        const taskName = $('#newnote').val().trim();
+
+        if (taskName !== undefined && taskName !== '') {
+            $('.loading').removeClass('loader-hide');
+            $.ajax({
+                method: "POST",
+                url: '/item',
+                data: {
+                    item: taskName,
+                },
+                success: res => {
+                    window.location.reload();
+                },
+                complete: () => {
+                    $('.loading').addClass('loader-hide');
+                    $('#newnote').val('');
+                }
+            });
+        };
+    }
+
+    function openConfirm(taskid) {
+        $('#confirmModal').modal('show');
+        $('#taskid').text(taskid);
+    }
+
+    function confirmDelete() {
+        const selectedItemId = $('#taskid').text();
+        $('.loading').removeClass('loader-hide');
+        $.ajax({
+            method: "DELETE",
+            url: "/item",
+            data: {
+                taskid: selectedItemId
+            },
+            success: res => {
+                $('#confirmModal').modal('hide');
+                location.reload();
+            },
+            complete: () => {
+                $('.loading').addClass('loader-hide');
+            }
+        });
+    }
+
+    function openEdit(taskid, oldTaskName) {
+        $('#editModal').modal('show');
+        $('#taskid').text(taskid);
+        $('#taskName').val(oldTaskName);
+    }
+
+    function confirmEdit() {
+        const selectedItemId = $('#taskid').text();
+        const newTaskName = $('#taskName').val().trim();
+        // console.log(newTaskName);
+        if (selectedItemId !== '' && newTaskName !== '') {
+            $('.loading').removeClass('loader-hide');
+            $.ajax({
+                method: "PUT",
+                url: "/item",
+                data: {
+                    taskid: selectedItemId,
+                    newitem: newTaskName
+                },
+                success: res => {
+                    $('#editModal').modal('hide');
+                    location.reload();
+                },
+                complete: () => {
+                    $('.loading').addClass('loader-hide');
+                }
+            });
+        }
+    }
+
+    function updateStatus(event, taskid, status) {
+        $('.loading').removeClass('loader-hide');
+        $.ajax({
+            method: "PUT",
+            url: "/item/status",
+            data: {
+                taskid: taskid,
+                item_status: status
+            },
+            success: res => {
+                const $selectedItem = $(event.target).parent('li');
+                $selectedItem.slideUp(250, function () {
+                    const $this = $(this);
+                    $this.detach();
+                    $this.find('div button .fa-edit').remove();
+                    $('#completed-list').prepend($this);
+                    $this.slideDown();
+                })
+            },
+            complete: () => {
+                $('.loading').addClass('loader-hide');
+            }
+        });
+    }
+</script>
