@@ -7,7 +7,7 @@ const striptags = require('striptags');
 const apigClientFactory = require('aws-api-gateway-client').default;
 const apigClient = apigClientFactory.newClient({
   invokeUrl: 'https://vbm4noxwbg.execute-api.us-east-2.amazonaws.com',
-  apiKey: 'jGF8IUdEgm25h6hOrtsSQ8TWlKPv9RLq8fJWMsaK', // REQUIRED
+  apiKey: '', // REQUIRED
   region: 'us-east-2' // REQUIRED
 });
 
@@ -30,7 +30,7 @@ const ITEM_STATUS = {
 let todoTasks, completedTasks;
 
 // Get Homepage
-router.get('/', ensureAuthenticated, async function(req, res) {
+router.get('/', ensureAuthenticated, async function (req, res) {
   await get_items(ITEM_STATUS.TODO);
   await get_items(ITEM_STATUS.COMPLETED);
 
